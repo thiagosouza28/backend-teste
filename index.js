@@ -7,7 +7,11 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const app = express();
-app.use(cors()); // Permite todas as origens
+
+// Permitir apenas solicitações da origem específica
+app.use(cors({
+    origin: 'https://frontend-teste-gamma.vercel.app'
+}));
 app.use(bodyParser.json());
 
 const db = new sqlite3.Database(path.resolve(__dirname, 'database.db'));
