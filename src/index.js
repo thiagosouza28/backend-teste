@@ -27,7 +27,7 @@ db.serialize(() => {
 });
 
 // Rota para cadastro
-app.post('/api/register', (req, res) => {
+app.post('/api/participants', (req, res) => {
     const { name, birthDate, cpf, church, district, whatsapp, acceptTerms } = req.body;
 
     if (!acceptTerms) {
@@ -66,7 +66,7 @@ app.post('/api/register', (req, res) => {
 });
 
 // Rota para consulta de participante por ID
-app.get('/api/register/:id', (req, res) => {
+app.get('/api/participants/:id', (req, res) => {
     const participantId = req.params.id;
 
     const sql = `SELECT * FROM participants WHERE id = ?`;
@@ -78,6 +78,27 @@ app.get('/api/register/:id', (req, res) => {
             return res.status(404).json({ message: 'Participante não encontrado.' });
         }
         res.json(row);
+    });
+});
+
+// Rota para gerar QR Code com base no ID
+app.get('/api/participants/:id/qrcode', (req, res) => {
+    const participantId = req.params.id;
+
+    const sql = `SELECT * FROM participants WHERE id = ?`;
+    db.get(sql, [participantId], (err, row) => {
+        if (err) {
+            return res.status(500).json({ message: 'Erro ao buscar participante.' });
+        }
+        if (!row) {
+            return res.status(404).json({ message: 'Participante não encontrado.' });
+        }
+        QRCode.toDataURL(JSON.stringify(row), (err, url) => {
+            if (err) {
+                return res.status(500).json({ message: 'Erro ao gerar o QR Code.' });
+            }
+            res.json({ qrCode: url });
+        });
     });
 });
 
