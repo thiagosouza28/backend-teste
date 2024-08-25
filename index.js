@@ -1,16 +1,15 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
 
 const app = express();
-app.use(cors({ origin: 'https://frontend-teste-gamma.vercel.app' }));
+app.use(cors());
 app.use(bodyParser.json());
 
-// Configurar o banco de dados
 const db = new sqlite3.Database(path.resolve(__dirname, 'database.db'));
 
 // Criar tabela se não existir
@@ -26,19 +25,6 @@ db.serialize(() => {
         whatsapp TEXT
     )`);
 });
-
-// Função para calcular a idade
-function calculateAge(birthDate) {
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDifference = today.getMonth() - birth.getMonth();
-
-    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birth.getDate())) {
-        age--;
-    }
-    return age;
-}
 
 // Rota para cadastro
 app.post('/api/register', (req, res) => {
@@ -106,8 +92,18 @@ app.get('/api/users', (req, res) => {
     });
 });
 
-// Configurar o servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`API rodando na porta ${PORT}`);
+function calculateAge(birthDate) {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDifference = today.getMonth() - birth.getMonth();
+
+    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birth.getDate())) {
+        age--;
+    }
+    return age;
+}
+
+app.listen(3000, () => {
+    console.log('API rodando na porta 3000');
 });
