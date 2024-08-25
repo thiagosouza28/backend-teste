@@ -14,7 +14,7 @@ const db = new sqlite3.Database(path.resolve(__dirname, 'database.db'));
 
 // Criar tabela se não existir
 db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
+    db.run(`CREATE TABLE IF NOT EXISTS participants (
         id TEXT PRIMARY KEY,
         name TEXT,
         birthDate TEXT,
@@ -37,7 +37,7 @@ app.post('/api/register', (req, res) => {
     const id = uuidv4();
     const age = calculateAge(birthDate);
 
-    const newUser = {
+    const newParticipant = {
         id,
         name,
         birthDate,
@@ -48,27 +48,43 @@ app.post('/api/register', (req, res) => {
         whatsapp
     };
 
-    const sql = `INSERT INTO users (id, name, birthDate, age, cpf, church, district, whatsapp)
+    const sql = `INSERT INTO participants (id, name, birthDate, age, cpf, church, district, whatsapp)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
     db.run(sql, [id, name, birthDate, age, cpf, church, district, whatsapp], function (err) {
         if (err) {
-            return res.status(500).json({ message: 'Erro ao cadastrar usuário.' });
+            return res.status(500).json({ message: 'Erro ao cadastrar participante.' });
         }
 
-        QRCode.toDataURL(JSON.stringify(newUser), (err, url) => {
+        QRCode.toDataURL(JSON.stringify(newParticipant), (err, url) => {
             if (err) {
                 return res.status(500).json({ message: 'Erro ao gerar o QR Code.' });
             }
-            res.json({ user: newUser, qrCode: url });
+            res.json({ participant: newParticipant, qrCode: url });
         });
     });
 });
 
-// Rota para consulta
-app.get('/api/users', (req, res) => {
+// Rota para consulta de participante por ID
+app.get('/api/register/:id', (req, res) => {
+    const participantId = req.params.id;
+
+    const sql = `SELECT * FROM participants WHERE id = ?`;
+    db.get(sql, [participantId], (err, row) => {
+        if (err) {
+            return res.status(500).json({ message: 'Erro ao buscar participante.' });
+        }
+        if (!row) {
+            return res.status(404).json({ message: 'Participante não encontrado.' });
+        }
+        res.json(row);
+    });
+});
+
+// Rota para consulta geral de participantes
+app.get('/api/participants', (req, res) => {
     const { name, id, cpf } = req.query;
-    let sql = `SELECT * FROM users WHERE 1=1`;
+    let sql = `SELECT * FROM participants WHERE 1=1`;
     const params = [];
 
     if (name) {
@@ -86,7 +102,7 @@ app.get('/api/users', (req, res) => {
 
     db.all(sql, params, (err, rows) => {
         if (err) {
-            return res.status(500).json({ message: 'Erro ao consultar usuários.' });
+            return res.status(500).json({ message: 'Erro ao consultar participantes.' });
         }
         res.json(rows);
     });
@@ -104,7 +120,7 @@ function calculateAge(birthDate) {
     return age;
 }
 
-// Use a variável PORT fornecida pelo Render
+// Use a variável PORT fornecida pelo Render ou 3000
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`API rodando na porta ${PORT}`);
