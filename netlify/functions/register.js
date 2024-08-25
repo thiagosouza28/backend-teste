@@ -35,6 +35,21 @@ function calculateAge(birthDate) {
 
 // Função handler
 exports.handler = async (event) => {
+    // Adicionar cabeçalhos CORS
+    const headers = {
+        'Access-Control-Allow-Origin': 'https://frontend-teste-y1xb.vercel.app',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'OPTIONS, POST, GET'
+    };
+
+    if (event.httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ message: 'OK' })
+        };
+    }
+
     if (event.httpMethod === 'POST') {
         const body = JSON.parse(event.body);
         const { name, birthDate, cpf, church, district, whatsapp, acceptTerms } = body;
@@ -42,6 +57,7 @@ exports.handler = async (event) => {
         if (!acceptTerms) {
             return {
                 statusCode: 400,
+                headers,
                 body: JSON.stringify({ message: 'Você deve aceitar os termos de uso.' })
             };
         }
@@ -68,6 +84,7 @@ exports.handler = async (event) => {
                 if (err) {
                     resolve({
                         statusCode: 500,
+                        headers,
                         body: JSON.stringify({ message: 'Erro ao cadastrar usuário.' })
                     });
                 } else {
@@ -75,11 +92,13 @@ exports.handler = async (event) => {
                         if (err) {
                             resolve({
                                 statusCode: 500,
+                                headers,
                                 body: JSON.stringify({ message: 'Erro ao gerar o QR Code.' })
                             });
                         } else {
                             resolve({
                                 statusCode: 200,
+                                headers,
                                 body: JSON.stringify({ user: newUser, qrCode: url })
                             });
                         }
@@ -90,6 +109,7 @@ exports.handler = async (event) => {
     } else {
         return {
             statusCode: 405,
+            headers,
             body: JSON.stringify({ message: 'Método não permitido' })
         };
     }
