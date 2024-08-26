@@ -12,7 +12,6 @@ app.use(bodyParser.json());
 
 const db = new sqlite3.Database(path.resolve(__dirname, 'database.db'));
 
-// Criar tabela se não existir
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS participants (
         id TEXT PRIMARY KEY,
