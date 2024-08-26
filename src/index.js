@@ -116,12 +116,13 @@ app.get('/api/participants/:id/qrcode', (req, res) => {
         if (!row) {
             return res.status(404).json({ message: 'Participante não encontrado.' });
         }
-        QRCode.toDataURL(`https://frontend-teste-ebiv.onrender.com/confirmation.html?id=${participantId}`, (err, url) => {
+        const url = `https://frontend-teste-six.vercel.app/src/public/confirmation.html?id=${participantId}`;
+        QRCode.toDataURL(url, (err, qrcodeUrl) => {
             if (err) {
                 console.error('Erro ao gerar o QR Code:', err);
                 return res.status(500).json({ message: 'Erro ao gerar o QR Code.' });
             }
-            res.json({ qrCode: url });
+            res.json({ qrCode: qrcodeUrl });
         });
     });
 });
