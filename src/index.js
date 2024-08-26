@@ -96,7 +96,7 @@ app.get('/api/participants/:id/qrcode', (req, res) => {
         if (!row) {
             return res.status(404).json({ message: 'Participante não encontrado.' });
         }
-        QRCode.toDataURL(JSON.stringify(row), (err, url) => {
+        QRCode.toDataURL(`https://frontend-teste-ebiv.onrender.com/confirmation.html?id=${participantId}`, (err, url) => {
             if (err) {
                 console.error('Erro ao gerar o QR Code:', err);
                 return res.status(500).json({ message: 'Erro ao gerar o QR Code.' });
@@ -105,6 +105,7 @@ app.get('/api/participants/:id/qrcode', (req, res) => {
         });
     });
 });
+
 
 // Rota para consulta geral de participantes
 app.get('/api/participants', (req, res) => {
