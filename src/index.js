@@ -98,9 +98,10 @@ app.get('/api/participants/:id', (req, res) => {
         if (!row) {
             return res.status(404).json({ message: 'Participante não encontrado.' });
         }
-        res.json(row);
+        res.json({ participant: row });  // Ajuste aqui para que a resposta tenha a chave `participant`
     });
 });
+
 
 // Rota para gerar QR Code com base no ID
 app.get('/api/participants/:id/qrcode', (req, res) => {
