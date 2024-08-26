@@ -134,6 +134,45 @@ app.get('/api/participants', (req, res) => {
     });
 });
 
+// Rota para edição de participante
+app.put('/api/participants/:id', (req, res) => {
+    const participantId = req.params.id;
+    const { name, birthDate, cpf, church, district, whatsapp } = req.body;
+
+    const age = calculateAge(birthDate);
+
+    const sql = `UPDATE participants SET name = ?, birthDate = ?, age = ?, cpf = ?, church = ?, district = ?, whatsapp = ? WHERE id = ?`;
+
+    db.run(sql, [name, birthDate, age, cpf, church, district, whatsapp, participantId], function (err) {
+        if (err) {
+            console.error('Erro ao editar participante:', err);
+            return res.status(500).json({ message: 'Erro ao editar participante.' });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ message: 'Participante não encontrado.' });
+        }
+        res.json({ message: 'Participante atualizado com sucesso.' });
+    });
+});
+
+// Rota para exclusão de participante
+app.delete('/api/participants/:id', (req, res) => {
+    const participantId = req.params.id;
+
+    const sql = `DELETE FROM participants WHERE id = ?`;
+
+    db.run(sql, [participantId], function (err) {
+        if (err) {
+            console.error('Erro ao excluir participante:', err);
+            return res.status(500).json({ message: 'Erro ao excluir participante.' });
+        }
+        if (this.changes === 0) {
+            return res.status(404).json({ message: 'Participante não encontrado.' });
+        }
+        res.json({ message: 'Participante excluído com sucesso.' });
+    });
+});
+
 function calculateAge(birthDate) {
     const today = new Date();
     const birth = new Date(birthDate);
