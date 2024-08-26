@@ -12,17 +12,24 @@ app.use(bodyParser.json());
 
 const db = new sqlite3.Database(path.resolve(__dirname, 'database.db'));
 
+// Criação da tabela, se não existir
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS participants (
         id TEXT PRIMARY KEY,
-        name TEXT,
-        birthDate TEXT,
+        name TEXT NOT NULL,
+        birthDate TEXT NOT NULL,
         age INTEGER,
-        cpf TEXT,
-        church TEXT,
-        district TEXT,
-        whatsapp TEXT
-    )`);
+        cpf TEXT NOT NULL,
+        church TEXT NOT NULL,
+        district TEXT NOT NULL,
+        whatsapp TEXT NOT NULL
+    )`, (err) => {
+        if (err) {
+            console.error('Erro ao criar a tabela:', err);
+        } else {
+            console.log('Tabela criada ou já existente.');
+        }
+    });
 });
 
 // Rota para cadastro
@@ -33,33 +40,28 @@ app.post('/api/participants', (req, res) => {
         return res.status(400).json({ message: 'Você deve aceitar os termos de uso.' });
     }
 
+    if (!name || !birthDate || !cpf || !church || !district || !whatsapp) {
+        return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
+    }
+
     const id = uuidv4();
     const age = calculateAge(birthDate);
-
-    const newParticipant = {
-        id,
-        name,
-        birthDate,
-        age,
-        cpf,
-        church,
-        district,
-        whatsapp
-    };
 
     const sql = `INSERT INTO participants (id, name, birthDate, age, cpf, church, district, whatsapp)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
     db.run(sql, [id, name, birthDate, age, cpf, church, district, whatsapp], function (err) {
         if (err) {
+            console.error('Erro ao cadastrar participante:', err);
             return res.status(500).json({ message: 'Erro ao cadastrar participante.' });
         }
 
-        QRCode.toDataURL(JSON.stringify(newParticipant), (err, url) => {
+        QRCode.toDataURL(JSON.stringify({ id, name, birthDate, age, cpf, church, district, whatsapp }), (err, url) => {
             if (err) {
+                console.error('Erro ao gerar o QR Code:', err);
                 return res.status(500).json({ message: 'Erro ao gerar o QR Code.' });
             }
-            res.json({ participant: newParticipant, qrCode: url });
+            res.json({ participant: { id, name, birthDate, age, cpf, church, district, whatsapp }, qrCode: url });
         });
     });
 });
@@ -71,6 +73,7 @@ app.get('/api/participants/:id', (req, res) => {
     const sql = `SELECT * FROM participants WHERE id = ?`;
     db.get(sql, [participantId], (err, row) => {
         if (err) {
+            console.error('Erro ao buscar participante:', err);
             return res.status(500).json({ message: 'Erro ao buscar participante.' });
         }
         if (!row) {
@@ -87,6 +90,7 @@ app.get('/api/participants/:id/qrcode', (req, res) => {
     const sql = `SELECT * FROM participants WHERE id = ?`;
     db.get(sql, [participantId], (err, row) => {
         if (err) {
+            console.error('Erro ao buscar participante:', err);
             return res.status(500).json({ message: 'Erro ao buscar participante.' });
         }
         if (!row) {
@@ -94,6 +98,7 @@ app.get('/api/participants/:id/qrcode', (req, res) => {
         }
         QRCode.toDataURL(JSON.stringify(row), (err, url) => {
             if (err) {
+                console.error('Erro ao gerar o QR Code:', err);
                 return res.status(500).json({ message: 'Erro ao gerar o QR Code.' });
             }
             res.json({ qrCode: url });
@@ -122,6 +127,7 @@ app.get('/api/participants', (req, res) => {
 
     db.all(sql, params, (err, rows) => {
         if (err) {
+            console.error('Erro ao consultar participantes:', err);
             return res.status(500).json({ message: 'Erro ao consultar participantes.' });
         }
         res.json(rows);
