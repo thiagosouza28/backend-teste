@@ -1,7 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
@@ -32,6 +31,21 @@ db.serialize(() => {
     });
 });
 
+// Função para gerar um ID sequencial baseado no ano
+function generateId(callback) {
+    const year = new Date().getFullYear();
+    const sql = `SELECT COUNT(*) AS count FROM participants WHERE id LIKE ?`;
+    db.get(sql, [`${year}%`], (err, row) => {
+        if (err) {
+            console.error('Erro ao gerar ID:', err);
+            return callback(err);
+        }
+        const count = row.count + 1;
+        const id = `${year}-${count.toString().padStart(4, '0')}`;
+        callback(null, id);
+    });
+}
+
 // Rota para cadastro
 app.post('/api/participants', (req, res) => {
     const { name, birthDate, cpf, church, district, whatsapp, acceptTerms } = req.body;
@@ -44,24 +58,29 @@ app.post('/api/participants', (req, res) => {
         return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
     }
 
-    const id = uuidv4();
-    const age = calculateAge(birthDate);
-
-    const sql = `INSERT INTO participants (id, name, birthDate, age, cpf, church, district, whatsapp)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-
-    db.run(sql, [id, name, birthDate, age, cpf, church, district, whatsapp], function (err) {
+    generateId((err, id) => {
         if (err) {
-            console.error('Erro ao cadastrar participante:', err);
-            return res.status(500).json({ message: 'Erro ao cadastrar participante.' });
+            return res.status(500).json({ message: 'Erro ao gerar o ID.' });
         }
 
-        QRCode.toDataURL(JSON.stringify({ id, name, birthDate, age, cpf, church, district, whatsapp }), (err, url) => {
+        const age = calculateAge(birthDate);
+
+        const sql = `INSERT INTO participants (id, name, birthDate, age, cpf, church, district, whatsapp)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        db.run(sql, [id, name, birthDate, age, cpf, church, district, whatsapp], function (err) {
             if (err) {
-                console.error('Erro ao gerar o QR Code:', err);
-                return res.status(500).json({ message: 'Erro ao gerar o QR Code.' });
+                console.error('Erro ao cadastrar participante:', err);
+                return res.status(500).json({ message: 'Erro ao cadastrar participante.' });
             }
-            res.json({ participant: { id, name, birthDate, age, cpf, church, district, whatsapp }, qrCode: url });
+
+            QRCode.toDataURL(JSON.stringify({ id, name, birthDate, age, cpf, church, district, whatsapp }), (err, url) => {
+                if (err) {
+                    console.error('Erro ao gerar o QR Code:', err);
+                    return res.status(500).json({ message: 'Erro ao gerar o QR Code.' });
+                }
+                res.json({ participant: { id, name, birthDate, age, cpf, church, district, whatsapp }, qrCode: url });
+            });
         });
     });
 });
@@ -105,7 +124,6 @@ app.get('/api/participants/:id/qrcode', (req, res) => {
         });
     });
 });
-
 
 // Rota para consulta geral de participantes
 app.get('/api/participants', (req, res) => {
